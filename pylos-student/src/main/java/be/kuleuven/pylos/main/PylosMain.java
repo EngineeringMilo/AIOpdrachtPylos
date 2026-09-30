@@ -88,7 +88,7 @@ public class PylosMain {
         };
 
         PlayerFactoryStudent factory = new PlayerFactoryStudent();
-        PylosPlayerType p2 = factory.getType("EersteRandomBot");
+        PylosPlayerType p2 = factory.getType("MinMax");
 //        PylosPlayerType p2 = new PylosPlayerType("Minimax2") {
 //            @Override
 //            public PylosPlayer create() {
