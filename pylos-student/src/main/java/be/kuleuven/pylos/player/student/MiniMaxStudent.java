@@ -2,18 +2,11 @@
 
     import be.kuleuven.pylos.game.*;
     import be.kuleuven.pylos.player.PylosPlayer;
-
     import java.util.ArrayList;
-
-    import static java.lang.Long.MAX_VALUE;
 
     public class MiniMaxStudent extends PylosPlayer {
 
-        private PylosSphere LastBall;
-        ArrayList<PylosSphere> allBalls;
-        private void min(){
-
-        }
+        ArrayList<PylosSphere> allBalls = new ArrayList<>();
 
         @Override
         public void doMove(PylosGameIF game, PylosBoard board) {
@@ -29,7 +22,7 @@
             PylosGameSimulator gameSimulator = new PylosGameSimulator(game.getState(), PLAYER_COLOR, board);
             int bestValue = Integer.MIN_VALUE;
             PylosLocation bestLocation = null;
-            LastBall = board.getReserve(this);
+            PylosSphere lastBall = board.getReserve(this);
             for (PylosLocation loc: board.getLocations()){
                 if(loc.isUsable()){
                     int value = minimax(3, loc, true, gameSimulator, board);
@@ -39,8 +32,9 @@
                     }
                 }
             }
-            LastBall = board.getReserve(this);
-            game.moveSphere(LastBall, bestLocation);
+            lastBall = board.getReserve(this);
+            allBalls.add(lastBall);
+            game.moveSphere(lastBall, bestLocation);
         }
 
         private int minimax(int depth,PylosLocation position,boolean maximizingplayer, PylosGameSimulator game, PylosBoard board){
@@ -64,16 +58,28 @@
         }
 
         private int eval(PylosBoard board) {
-            return board.getNumberOfSpheresOnBoard() + board.getReservesSize(PLAYER_COLOR);
+            return board.getReservesSize(PLAYER_COLOR);
         }
 
         @Override
         public void doRemove(PylosGameIF game, PylosBoard board) {
-            game.removeSphere(LastBall);
+            ArrayList<PylosSphere> removableSpeheres = new ArrayList<>();
+            for (PylosSphere ps: board.getSpheres(PLAYER_COLOR)){
+                if(ps.canRemove()) removableSpeheres.add(ps);
+            }
+            game.removeSphere(removableSpeheres.get(getRandom().nextInt(removableSpeheres.size())));
         }
 
         @Override
         public void doRemoveOrPass(PylosGameIF game, PylosBoard board) {
-            game.pass();
+            ArrayList<PylosSphere> removableSpeheres = new ArrayList<>();
+            for (PylosSphere ps: board.getSpheres(PLAYER_COLOR)){
+                if(ps.canRemove()) removableSpeheres.add(ps);
+            }
+            if(removableSpeheres.isEmpty()) {
+                game.pass();
+            }else{
+               game.removeSphere(removableSpeheres.get(getRandom().nextInt(removableSpeheres.size())));
+            }
         }
     }
