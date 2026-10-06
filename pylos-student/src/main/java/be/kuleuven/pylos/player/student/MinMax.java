@@ -25,7 +25,7 @@ public class MinMax extends PylosPlayer {
                         PylosLocation prevLoc = sphere1.getLocation(); //alles beware voor undo functie
 
                         gameSimulator.moveSphere(sphere1, loc);
-                        int value = minimax(3, false, gameSimulator, board);
+                        int value = minimax(4, false, gameSimulator, board);
                         gameSimulator.undoMoveSphere(sphere1, prevLoc, prevState, prevColor);
 
                         if (value > bestValue) {
@@ -47,7 +47,7 @@ public class MinMax extends PylosPlayer {
                     PylosPlayerColor prevColor = gameSimulator.getColor();
 
                     gameSimulator.moveSphere(sphere2, loc);
-                    int value = minimax(3, false, gameSimulator, board);
+                    int value = minimax(4, false, gameSimulator, board);
                     gameSimulator.undoAddSphere(sphere2, prevState, prevColor);
 
                     if(value > bestValue){
@@ -206,7 +206,29 @@ public class MinMax extends PylosPlayer {
     }
 
     private int eval(PylosBoard board) {
-        return board.getReservesSize(PLAYER_COLOR) - board.getReservesSize(PLAYER_COLOR.other());
+        int score = (board.getReservesSize(PLAYER_COLOR)-board.getReservesSize(PLAYER_COLOR.other()))*50;
+
+        //spheres dat niet in de reserve liggen krijgen ook nog punte!
+        for (PylosSphere sphere : board.getSpheres(PLAYER_COLOR)){
+            if(!sphere.isReserve()) {
+                PylosLocation locatie = sphere.getLocation();
+                score+=(locatie.Z * 5);
+
+                //mss ook nog de bollen die vrijgespeeld kunne worde ofz als ze me 3 zijn?????? idfk
+            }
+        }
+
+        for (PylosSphere sphere : board.getSpheres(PLAYER_COLOR.other())) {
+            if (!sphere.isReserve()) {
+                PylosLocation loc = sphere.getLocation();
+                score -= (loc.Z * 5);
+            }
+        }
+
+
+
+
+        return score;
     }
 
     @Override
