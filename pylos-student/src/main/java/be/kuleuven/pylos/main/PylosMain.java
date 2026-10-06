@@ -80,12 +80,8 @@ public class PylosMain {
 
     public static void startBattle() {
         int nRuns = 100;
-        PylosPlayerType p1 = new PylosPlayerType("BestFit") {
-            @Override
-            public PylosPlayer create() {
-                return new PylosPlayerBestFit();
-            }
-        };
+        PlayerFactoryCodes factory1 = new PlayerFactoryCodes();
+        PylosPlayerType p1 = factory1.getType("CODeS - Level 1");
 
         PlayerFactoryStudent factory = new PlayerFactoryStudent();
         PylosPlayerType p2 = factory.getType("MinMax");

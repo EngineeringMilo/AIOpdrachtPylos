@@ -38,7 +38,7 @@ public class MinMax extends PylosPlayer {
             }
         }
 
-        // 2. DAARNA KIJKEN NAAR RESERVEBOLLEN (jouw originele code)
+        //kijken naar sphere resrves
         PylosSphere sphere2 = board.getReserve(this);
         if (sphere2 != null) {
             for (PylosLocation loc: board.getLocations()){
