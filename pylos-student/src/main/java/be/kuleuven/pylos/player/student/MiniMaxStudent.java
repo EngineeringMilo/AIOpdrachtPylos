@@ -27,7 +27,7 @@
                     PylosGameState prevState = gameSimulator.getState();
                     PylosPlayerColor prevColor = gameSimulator.getColor();
                     gameSimulator.moveSphere(myBall, loc);
-                    int value = minimax(3, loc, false, gameSimulator, board);
+                    int value = minimax(3,false, gameSimulator, board);
                     gameSimulator.undoAddSphere(myBall,prevState,prevColor);
                     if(value > bestValue){
                         bestValue = value;
@@ -48,10 +48,10 @@
             }
         }
 
-        private int minimax(int depth,PylosLocation position,boolean maximizingplayer, PylosGameSimulator simulator, PylosBoard board){
-            if (depth == 0) return eval(board);
+        private int minimax(int depth, boolean maximizingplayer, PylosGameSimulator simulator, PylosBoard board){
             if (simulator.getWinner() == PLAYER_COLOR) return Integer.MAX_VALUE;
             if (simulator.getWinner() == PLAYER_COLOR.other()) return Integer.MIN_VALUE;
+            if (depth == 0) return eval(board);
 
             PylosPlayerColor currentColor = simulator.getColor();
 
@@ -67,7 +67,7 @@
                             PylosGameState prevState = simulator.getState();
                             PylosPlayerColor prevColor = simulator.getColor();
                             simulator.moveSphere(ball, loc);
-                            int value = minimax(depth-1, loc, false, simulator, board);
+                            int value = minimax(depth-1, false, simulator, board);
                             simulator.undoAddSphere(ball, prevState, prevColor);
                             maxVal = Math.max(maxVal, value);
                         }
@@ -81,7 +81,7 @@
                             PylosGameState prevState = simulator.getState();
                             PylosPlayerColor prevColor = simulator.getColor();
                             simulator.moveSphere(ball, loc);
-                            int value = minimax(depth-1, loc, true, simulator, board);
+                            int value = minimax(depth-1, true, simulator, board);
                             simulator.undoAddSphere(ball, prevState, prevColor);
                             minVal = Math.min(minVal, value);
 
@@ -102,7 +102,7 @@
                     PylosGameState prevState = simulator.getState();
                     PylosPlayerColor prevColor = simulator.getColor();
                     simulator.pass();
-                    int val = minimax(depth, position, maximizingplayer, simulator, board);
+                    int val = minimax(depth, maximizingplayer, simulator, board);
                     simulator.undoPass(prevState, prevColor);
                     return val;
                 }
@@ -116,7 +116,7 @@
                         simulator.removeSphere(ball);
                         //true want na remove_first in remove_second en dat is zelfde speler nog steeds
                         //zou denk ik ook gewoon met maximizinplayer en !maximizingplayer werken zou eens moeten bekijken ¯\_(ツ)_/¯
-                        int value = minimax(depth, prevLocation, true, simulator, board);
+                        int value = minimax(depth, true, simulator, board);
                         simulator.undoRemoveFirstSphere(ball, prevLocation, prevState, prevColor);
                         maxVal = Math.max(maxVal, value);
                     }
@@ -129,7 +129,7 @@
                         PylosPlayerColor prevColor = simulator.getColor();
                         PylosLocation prevLocation = ball.getLocation();
                         simulator.removeSphere(ball);
-                        int value = minimax(depth, prevLocation, false, simulator, board);
+                        int value = minimax(depth, false, simulator, board);
                         simulator.undoRemoveFirstSphere(ball, prevLocation, prevState, prevColor);
                         minVal = Math.min(minVal, value);
                     }
@@ -147,7 +147,7 @@
                     PylosGameState prevState = simulator.getState();
                     PylosPlayerColor prevColor = simulator.getColor();
                     simulator.pass();
-                    int value = minimax(depth, position, !maximizingplayer, simulator, board);
+                    int value = minimax(depth, !maximizingplayer, simulator, board);
                     simulator.undoPass(prevState, prevColor);
                     return value;
                 }
@@ -158,7 +158,7 @@
                         PylosPlayerColor prevColor = simulator.getColor();
                         PylosLocation prevLocation = ball.getLocation();
                         simulator.removeSphere(ball);
-                        int value = minimax(depth, prevLocation, false, simulator, board);
+                        int value = minimax(depth, false, simulator, board);
                         simulator.undoRemoveSecondSphere(ball, prevLocation, prevState, prevColor);
                         maxVal = Math.max(maxVal, value);
                     }
@@ -170,7 +170,7 @@
                         PylosPlayerColor prevColor = simulator.getColor();
                         PylosLocation prevLocation = ball.getLocation();
                         simulator.removeSphere(ball);
-                        int value = minimax(depth - 1, prevLocation, true, simulator, board);
+                        int value = minimax(depth - 1, true, simulator, board);
                         simulator.undoRemoveSecondSphere(ball, prevLocation, prevState, prevColor);
                         minVal = Math.min(minVal, value);
                     }
@@ -181,6 +181,14 @@
         }
 
         private int eval(PylosBoard board) {
+//            int BestBallLoc = 0;
+//            PylosSphere BestBall = null;
+//            for (PylosSphere ball: board.getSpheres()){
+//                if(ball.getLocation().Z > BestBallLoc){
+//                    BestBall = ball;
+//                    BestBallLoc = ball.getLocation().Z;
+//                }
+//            }
             return board.getReservesSize(PLAYER_COLOR) - board.getReservesSize(PLAYER_COLOR.other());
         }
 

@@ -80,22 +80,16 @@ public class PylosMain {
 
     public static void startBattle() {
         int nRuns = 100;
-//        PylosPlayerType p1 = new PylosPlayerType("BestFit") {
-//            @Override
-//            public PylosPlayer create() {
-//                return new PylosPlayerBestFit();
-//            }
-//        };
 
         PlayerFactoryStudent factory = new PlayerFactoryStudent();
-        PylosPlayerType p1 = factory.getType("EersteRandomBot");
-        PylosPlayerType p2 = factory.getType("MiniMaxStudent");
-//        PylosPlayerType p2 = new PylosPlayerType("Minimax2") {
-//            @Override
-//            public PylosPlayer create() {
-//                return new PylosPlayerMiniMax(2);
-//            }
-//        };
+//        PylosPlayerType p1 = factory.getType("EersteRandomBot");
+        PylosPlayerType p1 = factory.getType("MiniMaxStudent");
+        PylosPlayerType p2 = new PylosPlayerType("CODeS - level 4") {
+            @Override
+            public PylosPlayer create() {
+                return new PylosPlayerMiniMax(1);
+            }
+        };
 
         Battle.play(p1, p2, nRuns);
     }
