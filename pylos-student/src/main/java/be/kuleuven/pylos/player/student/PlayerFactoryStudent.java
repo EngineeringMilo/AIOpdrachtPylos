@@ -44,5 +44,12 @@ public class PlayerFactoryStudent extends PylosPlayerFactory {
                 return new MiniMaxStudent();
             }
         });
+
+        add(new PylosPlayerType("MCTS") {
+            @Override
+            public PylosPlayer create() {
+                return new MCTS();
+            }
+        });
     }
 }

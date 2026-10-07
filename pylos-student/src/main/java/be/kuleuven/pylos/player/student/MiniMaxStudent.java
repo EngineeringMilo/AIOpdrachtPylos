@@ -194,11 +194,27 @@
 
         @Override
         public void doRemove(PylosGameIF game, PylosBoard board) {
-            ArrayList<PylosSphere> removableSpeheres = new ArrayList<>();
-            for (PylosSphere ps: board.getSpheres(PLAYER_COLOR)){
-                if(ps.canRemove()) removableSpeheres.add(ps);
+            PylosGameSimulator gameSimulator = new PylosGameSimulator(game.getState(), PLAYER_COLOR, board);
+            int bestValue = Integer.MIN_VALUE;
+            ArrayList<PylosSphere> removableSpheres = new ArrayList<>();
+            for(PylosSphere ball: board.getSpheres()){
+                if(ball.canRemove()){
+                    removableSpheres.add(ball);
+                }
             }
-            game.removeSphere(removableSpeheres.get(getRandom().nextInt(removableSpeheres.size())));
+            PylosSphere myBall = removableSpheres.get(getRandom().nextInt(removableSpheres.size()));
+            for (PylosLocation loc: board.getLocations()){
+                if(loc.isUsable()){
+                    PylosGameState prevState = gameSimulator.getState();
+                    PylosPlayerColor prevColor = gameSimulator.getColor();
+                    PylosLocation prevLocation = myBall.getLocation();
+                    gameSimulator.removeSphere(myBall);
+                    int value = minimax(3,false, gameSimulator, board);
+                    gameSimulator.undoRemoveFirstSphere(myBall,prevLocation, prevState,prevColor);
+                    bestValue = Math.max(bestValue, value);
+                    }
+                }
+           game.removeSphere(myBall);
         }
 
         @Override
@@ -210,7 +226,7 @@
             if(removableSpeheres.isEmpty()) {
                 game.pass();
             }else{
-               game.removeSphere(removableSpeheres.get(getRandom().nextInt(removableSpeheres.size())));
+               doRemove(game, board);
             }
         }
     }
