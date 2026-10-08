@@ -225,9 +225,6 @@ public class MinMax extends PylosPlayer {
             }
         }
 
-
-
-
         return score;
     }
 
@@ -242,14 +239,14 @@ public class MinMax extends PylosPlayer {
 
     @Override
     public void doRemoveOrPass(PylosGameIF game, PylosBoard board) {
-        ArrayList<PylosSphere> removableSpeheres = new ArrayList<>();
+        ArrayList<PylosSphere> removableSpheres = new ArrayList<>();
         for (PylosSphere ps: board.getSpheres(PLAYER_COLOR)){
-            if(ps.canRemove()) removableSpeheres.add(ps);
+            if(ps.canRemove()) removableSpheres.add(ps);
         }
-        if(removableSpeheres.isEmpty()) {
+        if(removableSpheres.isEmpty()) {
             game.pass();
         }else{
-            game.removeSphere(removableSpeheres.get(getRandom().nextInt(removableSpeheres.size())));
+            game.removeSphere(removableSpheres.get(getRandom().nextInt(removableSpheres.size())));
         }
     }
 }
