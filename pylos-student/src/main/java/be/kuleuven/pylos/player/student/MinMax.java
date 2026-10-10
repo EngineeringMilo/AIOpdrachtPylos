@@ -206,7 +206,41 @@ public class MinMax extends PylosPlayer {
     }
 
     private int eval(PylosBoard board) {
-        int score = (board.getReservesSize(PLAYER_COLOR)-board.getReservesSize(PLAYER_COLOR.other()))*50;
+
+        PylosPlayerColor me = PLAYER_COLOR;
+        PylosPlayerColor opp = PLAYER_COLOR.other();
+
+        int score = 0;
+
+
+        //mss weights met statics make dak da zo kan verandere vanbove in de functie ipv hier zo met weights te gaan spele
+        //reservespheres
+        score += (board.getReservesSize(me)-board.getReservesSize(opp))*50;
+
+        //vierkanten bekijke, hoeveel hebk er van mij hoeveel van enemy zo score reducten of bijdoen
+        for (PylosSquare square : board.getAllSquares()) {
+            int myCount = square.getInSquare(me);
+            int oppCount = square.getInSquare(opp);
+
+            //gemengd, doek niks mee, late staan?
+            if (myCount > 0 && oppCount > 0) {
+                continue;
+            }
+
+            //mijn spheres in vierkant
+            if (myCount == 3) {
+                score += 30;
+            } else if (myCount == 2) {
+                score += 5;
+            }
+
+            //sphere vn opps in vierkant
+            if (oppCount == 3) {
+                score -= 30;
+            } else if (oppCount == 2) {
+                score -= 5;
+            }
+        }
 
         //spheres dat niet in de reserve liggen krijgen ook nog punte!
         for (PylosSphere sphere : board.getSpheres(PLAYER_COLOR)){
@@ -230,23 +264,66 @@ public class MinMax extends PylosPlayer {
 
     @Override
     public void doRemove(PylosGameIF game, PylosBoard board) {
-        ArrayList<PylosSphere> removableSpeheres = new ArrayList<>();
-        for (PylosSphere ps: board.getSpheres(PLAYER_COLOR)){
-            if(ps.canRemove()) removableSpeheres.add(ps);
+        PylosGameSimulator simulator = new PylosGameSimulator(game.getState(), PLAYER_COLOR, board);
+
+        int bestValue = Integer.MIN_VALUE;
+        PylosSphere bestSphere = null;
+
+        for (PylosSphere ball : board.getSpheres(this)) {
+            if (!ball.canRemove()) continue;
+
+            PylosGameState prevState = simulator.getState();
+            PylosPlayerColor prevColor = simulator.getColor();
+            PylosLocation prevLocation = ball.getLocation();
+
+            simulator.removeSphere(ball);
+            // na REMOVE_FIRST is dezelfde speler nog aan de beurt (REMOVE_SECOND) -> maximizing blijft true
+            int value = minimax(4, true, simulator, board);
+            simulator.undoRemoveFirstSphere(ball, prevLocation, prevState, prevColor);
+
+            if (bestSphere == null || value > bestValue) {
+                bestValue = value;
+                bestSphere = ball;
+            }
         }
-        game.removeSphere(removableSpeheres.get(getRandom().nextInt(removableSpeheres.size())));
+
+        game.removeSphere(bestSphere);
     }
 
     @Override
     public void doRemoveOrPass(PylosGameIF game, PylosBoard board) {
-        ArrayList<PylosSphere> removableSpheres = new ArrayList<>();
-        for (PylosSphere ps: board.getSpheres(PLAYER_COLOR)){
-            if(ps.canRemove()) removableSpheres.add(ps);
+        PylosGameSimulator simulator = new PylosGameSimulator(game.getState(), PLAYER_COLOR, board);
+
+        //pass?
+        PylosGameState passState = simulator.getState();
+        PylosPlayerColor passColor = simulator.getColor();
+        simulator.pass();
+        int bestValue = minimax(4, false, simulator, board);
+        simulator.undoPass(passState, passColor);
+
+        PylosSphere bestSphere = null; // null = passen
+
+        for (PylosSphere ball : board.getSpheres(this)) {
+            if (!ball.canRemove()) continue;
+
+            PylosGameState prevState = simulator.getState();
+            PylosPlayerColor prevColor = simulator.getColor();
+            PylosLocation prevLocation = ball.getLocation();
+
+            simulator.removeSphere(ball);
+            int value = minimax(4, false, simulator, board); // beurt gaat naar de tegenstander
+            simulator.undoRemoveSecondSphere(ball, prevLocation, prevState, prevColor);
+
+            if (value > bestValue) {
+                bestValue = value;
+                bestSphere = ball;
+            }
         }
-        if(removableSpheres.isEmpty()) {
+
+        if (bestSphere == null) {
             game.pass();
-        }else{
-            game.removeSphere(removableSpheres.get(getRandom().nextInt(removableSpheres.size())));
+        } else {
+            game.removeSphere(bestSphere);
         }
     }
 }
