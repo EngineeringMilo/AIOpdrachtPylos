@@ -14,6 +14,9 @@ import be.kuleuven.pylos.player.PylosPlayerType;
 import be.kuleuven.pylos.player.codes.PlayerFactoryCodes;
 import be.kuleuven.pylos.player.codes.PylosPlayerBestFit;
 import be.kuleuven.pylos.player.codes.PylosPlayerMiniMax;
+import be.kuleuven.pylos.player.student.EersteRandomBot;
+import be.kuleuven.pylos.player.student.MiniMaxRefactored;
+import be.kuleuven.pylos.player.student.MiniMaxStudent;
 import be.kuleuven.pylos.player.student.PlayerFactoryStudent;
 import be.kuleuven.pylos.sprt.SPRT;
 import be.kuleuven.pylos.tournament.Tournament;
@@ -81,13 +84,16 @@ public class PylosMain {
     public static void startBattle() {
         int nRuns = 100;
 
-        PlayerFactoryStudent factory = new PlayerFactoryStudent();
-//        PylosPlayerType p1 = factory.getType("EersteRandomBot");
-        PylosPlayerType p1 = factory.getType("MiniMaxStudent");
-        PylosPlayerType p2 = new PylosPlayerType("CODeS - level 1s") {
+        PylosPlayerType p1 = new PylosPlayerType("MiniMaxStudent") {
             @Override
             public PylosPlayer create() {
-                return new PylosPlayerMiniMax(1);
+                return new MiniMaxStudent(5);
+            }
+        };
+        PylosPlayerType p2 = new PylosPlayerType("MiniMaxStudent - Refactored and fixed") {
+            @Override
+            public PylosPlayer create() {
+                return new MiniMaxRefactored(2);
             }
         };
 

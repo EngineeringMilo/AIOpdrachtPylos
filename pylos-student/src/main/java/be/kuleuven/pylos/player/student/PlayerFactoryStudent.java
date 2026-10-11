@@ -41,7 +41,7 @@ public class PlayerFactoryStudent extends PylosPlayerFactory {
         add(new PylosPlayerType("MiniMaxStudent") {
             @Override
             public PylosPlayer create() {
-                return new MiniMaxStudent();
+                return new MiniMaxStudent(1);
             }
         });
 
