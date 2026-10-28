@@ -37,5 +37,19 @@ public class PlayerFactoryStudent extends PylosPlayerFactory {
                 return new EersteRandomBot();
             }
         });
+
+        add(new PylosPlayerType("MiniMaxStudent") {
+            @Override
+            public PylosPlayer create() {
+                return new MiniMaxStudent(1);
+            }
+        });
+
+        add(new PylosPlayerType("MCTS") {
+            @Override
+            public PylosPlayer create() {
+                return new MCTS();
+            }
+        });
     }
 }

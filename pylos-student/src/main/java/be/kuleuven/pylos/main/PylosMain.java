@@ -14,6 +14,9 @@ import be.kuleuven.pylos.player.PylosPlayerType;
 import be.kuleuven.pylos.player.codes.PlayerFactoryCodes;
 import be.kuleuven.pylos.player.codes.PylosPlayerBestFit;
 import be.kuleuven.pylos.player.codes.PylosPlayerMiniMax;
+import be.kuleuven.pylos.player.student.EersteRandomBot;
+import be.kuleuven.pylos.player.student.MiniMaxRefactored;
+import be.kuleuven.pylos.player.student.MiniMaxStudent;
 import be.kuleuven.pylos.player.student.PlayerFactoryStudent;
 import be.kuleuven.pylos.sprt.SPRT;
 import be.kuleuven.pylos.tournament.Tournament;
@@ -29,7 +32,7 @@ public class PylosMain {
     public static void main(String[] args) {
         /* !!! jvm argument !!! -ea */
 
-        //startSPRT();
+//        startSPRT();
 //        startEloRoundRobinTournament();
 //
 //        startSingleGame();
@@ -42,13 +45,13 @@ public class PylosMain {
         PylosPlayerType newPlayer = new PylosPlayerType("Minimax4") {
             @Override
             public PylosPlayer create() {
-                return new PylosPlayerMiniMax(4);
+                return new PylosPlayerMiniMax(7);
             }
         };
-        PylosPlayerType basePlayer = new PylosPlayerType("Bestfit") {
+        PylosPlayerType basePlayer = new PylosPlayerType("StudentMiniMax") {
             @Override
             public PylosPlayer create() {
-                return new PylosPlayerBestFit();
+                return new MiniMaxRefactored(7);
             }
         };
 
@@ -80,21 +83,19 @@ public class PylosMain {
 
     public static void startBattle() {
         int nRuns = 100;
-        PylosPlayerType p1 = new PylosPlayerType("BestFit") {
+
+        PylosPlayerType p1 = new PylosPlayerType("MiniMaxStudent") {
             @Override
             public PylosPlayer create() {
-                return new PylosPlayerBestFit();
+                return new MiniMaxRefactored(4);
             }
         };
-
-        PlayerFactoryStudent factory = new PlayerFactoryStudent();
-        PylosPlayerType p2 = factory.getType("EersteRandomBot");
-//        PylosPlayerType p2 = new PylosPlayerType("Minimax2") {
-//            @Override
-//            public PylosPlayer create() {
-//                return new PylosPlayerMiniMax(2);
-//            }
-//        };
+        PylosPlayerType p2 = new PylosPlayerType("CODeS - Level 5") {
+            @Override
+            public PylosPlayer create() {
+                return new PylosPlayerMiniMax(4);
+            }
+        };
 
         Battle.play(p1, p2, nRuns);
     }
