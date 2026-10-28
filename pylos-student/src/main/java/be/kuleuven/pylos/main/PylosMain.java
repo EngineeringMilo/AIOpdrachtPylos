@@ -32,7 +32,7 @@ public class PylosMain {
     public static void main(String[] args) {
         /* !!! jvm argument !!! -ea */
 
-        //startSPRT();
+//        startSPRT();
 //        startEloRoundRobinTournament();
 //
 //        startSingleGame();
@@ -45,13 +45,13 @@ public class PylosMain {
         PylosPlayerType newPlayer = new PylosPlayerType("Minimax4") {
             @Override
             public PylosPlayer create() {
-                return new PylosPlayerMiniMax(4);
+                return new PylosPlayerMiniMax(7);
             }
         };
-        PylosPlayerType basePlayer = new PylosPlayerType("Bestfit") {
+        PylosPlayerType basePlayer = new PylosPlayerType("StudentMiniMax") {
             @Override
             public PylosPlayer create() {
-                return new PylosPlayerBestFit();
+                return new MiniMaxRefactored(7);
             }
         };
 
@@ -87,13 +87,13 @@ public class PylosMain {
         PylosPlayerType p1 = new PylosPlayerType("MiniMaxStudent") {
             @Override
             public PylosPlayer create() {
-                return new MiniMaxStudent(5);
+                return new MiniMaxRefactored(4);
             }
         };
-        PylosPlayerType p2 = new PylosPlayerType("MiniMaxStudent - Refactored and fixed") {
+        PylosPlayerType p2 = new PylosPlayerType("CODeS - Level 5") {
             @Override
             public PylosPlayer create() {
-                return new MiniMaxRefactored(2);
+                return new PylosPlayerMiniMax(4);
             }
         };
 

@@ -9,7 +9,6 @@ import java.util.List;
 public class MiniMaxRefactored extends PylosPlayer {
 
     private static final int WIN = 1_000_000;
-
     private enum Kind { ADD, MOVE, REMOVE, PASS }
 
     private static class Move {
@@ -51,7 +50,6 @@ public class MiniMaxRefactored extends PylosPlayer {
 
     private Move choose(PylosGameIF game, PylosBoard board) {
         PylosGameSimulator sim = new PylosGameSimulator(game.getState(), PLAYER_COLOR, board);
-
         Move best = null;
         int bestValue = Integer.MIN_VALUE;
 
