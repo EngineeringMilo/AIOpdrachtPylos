@@ -37,21 +37,21 @@ public class PylosMain {
 //
 //        startSingleGame();
         startBattle();
-//        startBattleMultithreaded();
+      //  startBattleMultithreaded();
 //        startRoundRobinTournament();
     }
 
     public static void startSPRT() {
-        PylosPlayerType newPlayer = new PylosPlayerType("Minimax4") {
+        PylosPlayerType newPlayer = new PylosPlayerType("MinimaxRefactored depth 9") {
             @Override
             public PylosPlayer create() {
-                return new PylosPlayerMiniMax(7);
+                return new MiniMaxRefactored(9);
             }
         };
-        PylosPlayerType basePlayer = new PylosPlayerType("StudentMiniMax") {
+        PylosPlayerType basePlayer = new PylosPlayerType("Minimaxrefactored depth 8") {
             @Override
             public PylosPlayer create() {
-                return new MiniMaxRefactored(7);
+                return new MiniMaxRefactored(8);
             }
         };
 
@@ -82,18 +82,18 @@ public class PylosMain {
     }
 
     public static void startBattle() {
-        int nRuns = 100;
+        int nRuns = 50;
 
-        PylosPlayerType p1 = new PylosPlayerType("MiniMaxStudent") {
+        PylosPlayerType p1 = new PylosPlayerType("minmaxrefactored") {
             @Override
             public PylosPlayer create() {
-                return new MiniMaxRefactored(4);
+                return new MiniMaxRefactored(9);
             }
         };
-        PylosPlayerType p2 = new PylosPlayerType("CODeS - Level 5") {
+        PylosPlayerType p2 = new PylosPlayerType("CODeS - Level 4") {
             @Override
             public PylosPlayer create() {
-                return new PylosPlayerMiniMax(4);
+                return new PylosPlayerMiniMax(8);
             }
         };
 
@@ -108,16 +108,16 @@ public class PylosMain {
         int nRuns = 1000;
         int nThreads = 8;
 
-        PylosPlayerType p1 = new PylosPlayerType("BestFit") {
+        PylosPlayerType p1 = new PylosPlayerType("MiniMaxRefactored") {
             @Override
             public PylosPlayer create() {
-                return new PylosPlayerBestFit();
+                return new MiniMaxRefactored(7);
             }
         };
-        PylosPlayerType p2 = new PylosPlayerType("Minimax2") {
+        PylosPlayerType p2 = new PylosPlayerType("CODES 4") {
             @Override
             public PylosPlayer create() {
-                return new PylosPlayerMiniMax(2);
+                return new PylosPlayerMiniMax(4);
             }
         };
 
