@@ -98,8 +98,11 @@ public class MiniMaxRefactored extends PylosPlayer {
 
         if (rootMoves.size() == 1) return rootMoves.get(0); // enige zet, niet zoeken
 
+        Move bestMove = rootMoves.get(0);
+
         for (int d = 1; d <= diepte; d++) {
             int bestValue = Integer.MIN_VALUE;
+            Move iterationBest = null;
 
             for (Move m : rootMoves) {
                 apply(m, sim);
@@ -107,12 +110,19 @@ public class MiniMaxRefactored extends PylosPlayer {
                 undo(m, sim);
 
                 m.score = value;
-                if (value > bestValue) bestValue = value;
+                if (iterationBest == null || value > bestValue) {
+                    bestValue = value;
+                    iterationBest = m;
+                }
+            }
+
+            if(iterationBest != null){
+                bestMove = iterationBest;
             }
             // beste zet vooraan voor de volgende iteratie (stabiele sortering)
             rootMoves.sort((a, b) -> Integer.compare(b.score, a.score));
         }
-        return rootMoves.get(0);
+        return bestMove;
     }
 
     private void execute(PylosGameIF game, Move m) {

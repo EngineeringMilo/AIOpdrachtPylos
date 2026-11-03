@@ -45,11 +45,31 @@ public class PlayerFactoryStudent extends PylosPlayerFactory {
             }
         });
 
+        add(new PylosPlayerType("BigM") {
+            @Override
+            public PylosPlayer create() {
+                return new MiniMaxStudent(6);
+            }
+        });
+
         add(new PylosPlayerType("MCTS") {
             @Override
             public PylosPlayer create() {
                 return new MCTS();
             }
         });
+
+        add(new PylosPlayerType("BigZ") {
+            @Override
+            public PylosPlayer create() {
+                return new BigZ();
+            }
+        });
+    }
+
+    public void addAll(PylosPlayerFactory fac){
+        for(PylosPlayerType type: fac.getTypes()){
+            add(type);
+        }
     }
 }

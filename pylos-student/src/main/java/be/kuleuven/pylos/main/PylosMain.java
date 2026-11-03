@@ -14,10 +14,7 @@ import be.kuleuven.pylos.player.PylosPlayerType;
 import be.kuleuven.pylos.player.codes.PlayerFactoryCodes;
 import be.kuleuven.pylos.player.codes.PylosPlayerBestFit;
 import be.kuleuven.pylos.player.codes.PylosPlayerMiniMax;
-import be.kuleuven.pylos.player.student.EersteRandomBot;
-import be.kuleuven.pylos.player.student.MiniMaxRefactored;
-import be.kuleuven.pylos.player.student.MiniMaxStudent;
-import be.kuleuven.pylos.player.student.PlayerFactoryStudent;
+import be.kuleuven.pylos.player.student.*;
 import be.kuleuven.pylos.sprt.SPRT;
 import be.kuleuven.pylos.tournament.Tournament;
 import be.kuleuven.pylos.tournament.TournamentConfig;
@@ -33,11 +30,11 @@ public class PylosMain {
         /* !!! jvm argument !!! -ea */
 
 //        startSPRT();
-//        startEloRoundRobinTournament();
+        startEloRoundRobinTournament();
 //
 //        startSingleGame();
-        startBattle();
-      //  startBattleMultithreaded();
+//        startBattle();
+//        startBattleMultithreaded();
 //        startRoundRobinTournament();
     }
 
@@ -45,13 +42,13 @@ public class PylosMain {
         PylosPlayerType newPlayer = new PylosPlayerType("MinimaxRefactored depth 9") {
             @Override
             public PylosPlayer create() {
-                return new MiniMaxRefactored(9);
+                return new MiniMaxRefactored(6);
             }
         };
-        PylosPlayerType basePlayer = new PylosPlayerType("Minimaxrefactored depth 8") {
+        PylosPlayerType basePlayer = new PylosPlayerType("MinimaxStudent") {
             @Override
             public PylosPlayer create() {
-                return new MiniMaxRefactored(8);
+                return new MiniMaxStudent(6);
             }
         };
 
@@ -61,9 +58,13 @@ public class PylosMain {
     public static void startEloRoundRobinTournament() {
         PylosPlayerFactory factory = new PlayerFactoryCodes();
 
+        PlayerFactoryStudent fac = new PlayerFactoryStudent();
+
+        fac.addAll(factory);
+
         TournamentConfig config = TournamentConfig.builder()
-                .playerFactory(factory)
-                .anchorPlayer("CODeS - Level 2", 1000.0)
+                .playerFactory(fac)
+                .anchorPlayer("CODeS - Level 4", 1000.0)
                 .build();
         Tournament.run(config);
     }
@@ -84,16 +85,16 @@ public class PylosMain {
     public static void startBattle() {
         int nRuns = 50;
 
-        PylosPlayerType p1 = new PylosPlayerType("minmaxrefactored") {
+        PylosPlayerType p1 = new PylosPlayerType("Wij") {
             @Override
             public PylosPlayer create() {
                 return new MiniMaxRefactored(9);
             }
         };
-        PylosPlayerType p2 = new PylosPlayerType("CODeS - Level 4") {
+        PylosPlayerType p2 = new PylosPlayerType("Zeger") {
             @Override
             public PylosPlayer create() {
-                return new PylosPlayerMiniMax(8);
+                return new BigZ();
             }
         };
 

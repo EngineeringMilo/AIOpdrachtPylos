@@ -4,44 +4,63 @@ import be.kuleuven.pylos.game.*;
 import be.kuleuven.pylos.player.PylosPlayer;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 public class MiniMaxStudent extends PylosPlayer {
 
     private static final int WIN = 1_000_000;
     private enum Kind { ADD, MOVE, REMOVE, PASS }
 
-    //caching
-    private static final int CACHE_MAX_ENTRIES = 1 << 20;
-
     private static final byte TT_EXACT = 0, TT_LOWER = 1, TT_UPPER = 2;
 
-    private record TTEntry(long key, int depth, int value, byte flag){}
+    /* ------------------------- transpositietabel (arrays) ------------------------- */
 
-    // transpositietabel: zelfde positie (zelfde bord + zelfde game-state + zelfde speler) niet opnieuw doorzoeken
-    private final Map<Long, TTEntry> transpositionTable = new HashMap<>();
-    // eval hangt enkel af van de bordpositie + wie aan zet is -> memoizen
-    private final Map<Long, Integer> evalCache = new HashMap<>();
+    private static final int TT_BITS = 21;                 // 2M entries, ~32 MB per speler
+    private static final int TT_SIZE = 1 << TT_BITS;
+    private final long[]  ttKey   = new long[TT_SIZE];
+    private final int[]   ttValue = new int[TT_SIZE];
+    private final byte[]  ttDepth = new byte[TT_SIZE];     // -1 = leeg slot
+    private final byte[]  ttFlag  = new byte[TT_SIZE];
+    private final short[] ttMove  = new short[TT_SIZE];    // beste zet als compacte code, -1 = geen
+
+    /* ------------------------------ eval-cache (arrays) --------------------------- */
+
+    private static final int EVAL_BITS = 20;
+    private static final int EVAL_SIZE = 1 << EVAL_BITS;
+    private final long[] evalKey = new long[EVAL_SIZE];    // -1 = leeg slot
+    private final int[]  evalVal = new int[EVAL_SIZE];
+
+    private static int idx(long key, int bits) {
+        return (int) ((key * 0x9E3779B97F4A7C15L) >>> (64 - bits));
+    }
 
     /* --------------------------------------------------------------------------- */
+
+    private static int locCode(PylosLocation l) {
+        return (l.Z << 4) | (l.Y << 2) | l.X;              // 6 bits
+    }
 
     private static class Move {
         final Kind kind;
         final PylosSphere sphere;
         final PylosLocation to;
+        final int code;          // compacte zetcode voor de TT: kind(2) | from(6) | to(6)
         // undo-info
         PylosGameState prevState;
         PylosPlayerColor prevColor;
         PylosLocation prevLocation;
-        // voor move ordering
+        // ordering en iterative deepening
         int order;
+        int score;
 
         Move(Kind kind, PylosSphere sphere, PylosLocation to) {
             this.kind = kind;
             this.sphere = sphere;
             this.to = to;
+            int from = (kind == Kind.MOVE || kind == Kind.REMOVE) ? locCode(sphere.getLocation()) : 0;
+            int t = to != null ? locCode(to) : 0;
+            this.code = (kind.ordinal() << 12) | (from << 6) | t;
         }
     }
 
@@ -49,6 +68,9 @@ public class MiniMaxStudent extends PylosPlayer {
 
     public MiniMaxStudent(int diepte) {
         this.diepte = diepte;
+        Arrays.fill(ttDepth, (byte) -1);
+        Arrays.fill(ttMove, (short) -1);
+        Arrays.fill(evalKey, -1L);
     }
 
     @Override
@@ -66,25 +88,31 @@ public class MiniMaxStudent extends PylosPlayer {
         execute(game, choose(game, board));
     }
 
+    /* ------------------------- root + iterative deepening ------------------------- */
+
     private Move choose(PylosGameIF game, PylosBoard board) {
         PylosGameSimulator sim = new PylosGameSimulator(game.getState(), PLAYER_COLOR, board);
-        Move best = null;
-        int bestValue = Integer.MIN_VALUE;
 
         List<Move> rootMoves = generateMoves(sim, board);
-        orderMoves(rootMoves, sim.getColor());
+        orderMoves(rootMoves, sim.getColor(), -1);          // startvolgorde voor iteratie 1
 
-        for (Move m : rootMoves) {
-            apply(m, sim);
-            int value = minimax(childDepth(m, diepte), sim, board, bestValue, Integer.MAX_VALUE);
-            undo(m, sim);
+        if (rootMoves.size() == 1) return rootMoves.get(0); // enige zet, niet zoeken
 
-            if (best == null || value > bestValue) {
-                bestValue = value;
-                best = m;
+        for (int d = 1; d <= diepte; d++) {
+            int bestValue = Integer.MIN_VALUE;
+
+            for (Move m : rootMoves) {
+                apply(m, sim);
+                int value = minimax(childDepth(m, d), sim, board, bestValue, Integer.MAX_VALUE);
+                undo(m, sim);
+
+                m.score = value;
+                if (value > bestValue) bestValue = value;
             }
+            // beste zet vooraan voor de volgende iteratie (stabiele sortering)
+            rootMoves.sort((a, b) -> Integer.compare(b.score, a.score));
         }
-        return best;
+        return rootMoves.get(0);
     }
 
     private void execute(PylosGameIF game, Move m) {
@@ -102,6 +130,8 @@ public class MiniMaxStudent extends PylosPlayer {
         }
     }
 
+    /* ---------------------------------- zoeken ------------------------------------ */
+
     private int minimax(int depth, PylosGameSimulator sim, PylosBoard board, int alpha, int beta) {
         if (sim.getState() == PylosGameState.COMPLETED) {
             boolean iWon = sim.getColor() != PLAYER_COLOR;
@@ -110,29 +140,35 @@ public class MiniMaxStudent extends PylosPlayer {
         if (depth <= 0 && sim.getState() == PylosGameState.MOVE) return eval(board, sim.getColor());
 
         long key = positionKey(board, sim);
-        TTEntry entry = transpositionTable.get(key);
-        if (entry != null && entry.key == key && entry.depth >= depth) {
-            switch (entry.flag) {
-                case TT_EXACT: return entry.value;
-                case TT_LOWER: alpha = Math.max(alpha, entry.value); break;
-                case TT_UPPER: beta = Math.min(beta, entry.value); break;
+        int slot = idx(key, TT_BITS);
+        int hint = -1;
+
+        if (ttDepth[slot] >= 0 && ttKey[slot] == key) {
+            hint = ttMove[slot];                            // beste zet uit eerdere zoektocht
+            if (ttDepth[slot] >= depth) {
+                int v = ttValue[slot];
+                switch (ttFlag[slot]) {
+                    case TT_EXACT: return v;
+                    case TT_LOWER: alpha = Math.max(alpha, v); break;
+                    case TT_UPPER: beta = Math.min(beta, v); break;
+                }
+                if (alpha >= beta) return v;
             }
-            if (alpha >= beta) return entry.value;
         }
 
         List<Move> moves = generateMoves(sim, board);
         if (moves.isEmpty()) {
             // geen zetten meer = eindwaarde, onafhankelijk van de diepte
             int v = eval(board, sim.getColor());
-            transpositionTable.put(key, new TTEntry(key, Integer.MAX_VALUE, v, TT_EXACT));
+            store(key, 100, v, TT_EXACT, -1);
             return v;
         }
 
-        // beste zetten eerst -> meer alpha-beta cutoffs
-        orderMoves(moves, sim.getColor());
+        orderMoves(moves, sim.getColor(), hint);
 
         boolean max = sim.getColor() == PLAYER_COLOR;
         int best = max ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+        int bestCode = -1;
         int alphaOrig = alpha, betaOrig = beta;
 
         for (Move m : moves) {
@@ -141,10 +177,10 @@ public class MiniMaxStudent extends PylosPlayer {
             undo(m, sim);
 
             if (max) {
-                best = Math.max(best, v);
+                if (v > best) { best = v; bestCode = m.code; }
                 alpha = Math.max(alpha, v);
             } else {
-                best = Math.min(best, v);
+                if (v < best) { best = v; bestCode = m.code; }
                 beta = Math.min(beta, v);
             }
             if (beta <= alpha) break;
@@ -152,15 +188,17 @@ public class MiniMaxStudent extends PylosPlayer {
 
         // bound bepalen tov het originele zoekvenster (fail-soft)
         byte flag = best <= alphaOrig ? TT_UPPER : (best >= betaOrig ? TT_LOWER : TT_EXACT);
-        store(key, depth, best, flag);
+        store(key, depth, best, flag, bestCode);
         return best;
     }
 
-    private void store(long key, int depth, int value, byte flag) {
-        if (transpositionTable.size() >= CACHE_MAX_ENTRIES && !transpositionTable.containsKey(key)) {
-            transpositionTable.clear(); // cache is enkel een optimalisatie, leeggooien is veilig
-        }
-        transpositionTable.put(key, new TTEntry(key, depth, value, flag));
+    private void store(long key, int depth, int value, byte flag, int moveCode) {
+        int slot = idx(key, TT_BITS);
+        ttKey[slot] = key;
+        ttValue[slot] = value;
+        ttDepth[slot] = (byte) Math.min(depth, 100);
+        ttFlag[slot] = flag;
+        ttMove[slot] = (short) moveCode;
     }
 
     private static long positionKey(PylosBoard board, PylosGameSimulator sim) {
@@ -177,7 +215,7 @@ public class MiniMaxStudent extends PylosPlayer {
 
     /* ------------------------------ MOVE ORDERING ------------------------------ */
 
-    private void orderMoves(List<Move> moves, PylosPlayerColor color) {
+    private void orderMoves(List<Move> moves, PylosPlayerColor color, int ttHint) {
         for (Move m : moves) {
             int s;
             switch (m.kind) {
@@ -201,12 +239,13 @@ public class MiniMaxStudent extends PylosPlayer {
                     s += 200;    // vierkant van tegenstander blokkeren
                 }
             }
+            if (m.code == ttHint) s += 10_000;   // beste zet uit de TT altijd eerst
             m.order = s;
         }
         moves.sort((a, b) -> Integer.compare(b.order, a.order));
     }
 
-    // Hulpfunctie op één plek: als maySquare in jouw API anders heet, pas je enkel dit aan.
+    // true als een bal van `color` op `loc` een vierkant van 4 eigen ballen vormt
     private static boolean completesSquare(PylosLocation loc, PylosPlayerColor color) {
         for (PylosSquare sq : loc.getSquares()) {
             if (sq.getInSquare(color) == 3 && sq.getInSquare(color.other()) == 0) {
@@ -289,10 +328,9 @@ public class MiniMaxStudent extends PylosPlayer {
     }
 
     private int eval(PylosBoard board, PylosPlayerColor toMove) {
-        // toMove zit in de key, anders krijg je verkeerde cache-hits
         long key = (board.toLong() << 1) | toMove.ordinal();
-        Integer cached = evalCache.get(key);
-        if (cached != null) return cached;
+        int slot = idx(key, EVAL_BITS);
+        if (evalKey[slot] == key) return evalVal[slot];
 
         PylosPlayerColor me = PLAYER_COLOR;
         PylosPlayerColor opp = PLAYER_COLOR.other();
@@ -340,7 +378,8 @@ public class MiniMaxStudent extends PylosPlayer {
             }
         }
 
-        evalCache.put(key, score);
+        evalKey[slot] = key;
+        evalVal[slot] = score;
         return score;
     }
 }
