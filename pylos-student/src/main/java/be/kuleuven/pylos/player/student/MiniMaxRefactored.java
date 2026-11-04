@@ -2,10 +2,12 @@ package be.kuleuven.pylos.player.student;
 
 import be.kuleuven.pylos.game.*;
 import be.kuleuven.pylos.player.PylosPlayer;
+import be.kuleuven.pylos.player.PylosPlayerObserver;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 public class MiniMaxRefactored extends PylosPlayer {
 
@@ -27,6 +29,8 @@ public class MiniMaxRefactored extends PylosPlayer {
     private final long[] evalKey = new long[EVAL_SIZE];    // -1 = leeg slot
     private final int[]  evalVal = new int[EVAL_SIZE];
 
+    // Converteert een long-key naar een index via Fibonacci hashing (gouden verhouding)
+    // -> zou botsingen zo veel mogelijk moeten temperen
     private static int idx(long key, int bits) {
         return (int) ((key * 0x9E3779B97F4A7C15L) >>> (64 - bits));
     }
@@ -58,13 +62,23 @@ public class MiniMaxRefactored extends PylosPlayer {
         }
     }
 
-    private final int diepte;
+    private final int diepte = 9;
 
-    public MiniMaxRefactored(int diepte) {
-        this.diepte = diepte;
+    public MiniMaxRefactored() {
         Arrays.fill(ttDepth, (byte) -1);
         Arrays.fill(ttMove, (short) -1);
         Arrays.fill(evalKey, -1L);
+    }
+
+    @Override
+    // Anders kan het zijn dat de transpotitie tabel van de vorige game wordt meegenomen als er geen nieuwe speler wordt aangemaakt
+    // Geoown om het eerlijk te houden.
+    public void init(PylosPlayerColor playerColor, PylosPlayer other, PylosPlayerObserver observer, Random random) {
+        super.init(playerColor, other, observer, random);
+        Arrays.fill(ttDepth, (byte) -1);
+        Arrays.fill(ttMove, (short) -1);
+        Arrays.fill(evalKey, -1L);
+
     }
 
     @Override
