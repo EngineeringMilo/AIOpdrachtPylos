@@ -16,13 +16,13 @@ public class MiniMaxRefactored extends PylosPlayer {
 
     private static final byte TT_EXACT = 0, TT_LOWER = 1, TT_UPPER = 2;
 
-    private static final int TT_BITS = 21;                 // 2M entries, ~32 MB per speler
+    private static final int TT_BITS = 21;
     private static final int TT_SIZE = 1 << TT_BITS;
     private final long[]  ttKey   = new long[TT_SIZE];
     private final int[]   ttValue = new int[TT_SIZE];
-    private final byte[]  ttDepth = new byte[TT_SIZE];     // -1 = leeg slot
+    private final byte[]  ttDepth = new byte[TT_SIZE];// -1 = leeg slot
     private final byte[]  ttFlag  = new byte[TT_SIZE];
-    private final short[] ttMove  = new short[TT_SIZE];    // beste zet als compacte code, -1 = geen
+    private final short[] ttMove  = new short[TT_SIZE];// beste zet als compacte code, -1 = geen
 
     private static final int EVAL_BITS = 20;
     private static final int EVAL_SIZE = 1 << EVAL_BITS;
@@ -157,6 +157,8 @@ public class MiniMaxRefactored extends PylosPlayer {
         int slot = idx(key, TT_BITS);
         int hint = -1;
 
+        int alphaOrig = alpha, betaOrig = beta;
+
         if (ttDepth[slot] >= 0 && ttKey[slot] == key) {
             hint = ttMove[slot]; // beste zet uit eerdere zoektocht
             if (ttDepth[slot] >= depth) {
@@ -183,7 +185,6 @@ public class MiniMaxRefactored extends PylosPlayer {
         boolean max = sim.getColor() == PLAYER_COLOR;
         int best = max ? Integer.MIN_VALUE : Integer.MAX_VALUE;
         int bestCode = -1;
-        int alphaOrig = alpha, betaOrig = beta;
 
         for (Move m : moves) {
             apply(m, sim);
