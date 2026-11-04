@@ -14,8 +14,6 @@ public class MiniMaxRefactored extends PylosPlayer {
 
     private static final byte TT_EXACT = 0, TT_LOWER = 1, TT_UPPER = 2;
 
-    /* ------------------------- transpositietabel (arrays) ------------------------- */
-
     private static final int TT_BITS = 21;                 // 2M entries, ~32 MB per speler
     private static final int TT_SIZE = 1 << TT_BITS;
     private final long[]  ttKey   = new long[TT_SIZE];
@@ -23,8 +21,6 @@ public class MiniMaxRefactored extends PylosPlayer {
     private final byte[]  ttDepth = new byte[TT_SIZE];     // -1 = leeg slot
     private final byte[]  ttFlag  = new byte[TT_SIZE];
     private final short[] ttMove  = new short[TT_SIZE];    // beste zet als compacte code, -1 = geen
-
-    /* ------------------------------ eval-cache (arrays) --------------------------- */
 
     private static final int EVAL_BITS = 20;
     private static final int EVAL_SIZE = 1 << EVAL_BITS;
@@ -34,8 +30,6 @@ public class MiniMaxRefactored extends PylosPlayer {
     private static int idx(long key, int bits) {
         return (int) ((key * 0x9E3779B97F4A7C15L) >>> (64 - bits));
     }
-
-    /* --------------------------------------------------------------------------- */
 
     private static int locCode(PylosLocation l) {
         return (l.Z << 4) | (l.Y << 2) | l.X;              // 6 bits
@@ -88,13 +82,12 @@ public class MiniMaxRefactored extends PylosPlayer {
         execute(game, choose(game, board));
     }
 
-    /* ------------------------- root + iterative deepening ------------------------- */
-
+    // Hier zit de iterative deepening gng
     private Move choose(PylosGameIF game, PylosBoard board) {
         PylosGameSimulator sim = new PylosGameSimulator(game.getState(), PLAYER_COLOR, board);
 
         List<Move> rootMoves = generateMoves(sim, board);
-        orderMoves(rootMoves, sim.getColor(), -1);          // startvolgorde voor iteratie 1
+        orderMoves(rootMoves, sim.getColor(), -1); // startvolgorde voor iteratie 1
 
         if (rootMoves.size() == 1) return rootMoves.get(0); // enige zet, niet zoeken
 
@@ -119,7 +112,6 @@ public class MiniMaxRefactored extends PylosPlayer {
             if(iterationBest != null){
                 bestMove = iterationBest;
             }
-            // beste zet vooraan voor de volgende iteratie (stabiele sortering)
             rootMoves.sort((a, b) -> Integer.compare(b.score, a.score));
         }
         return bestMove;
@@ -140,8 +132,6 @@ public class MiniMaxRefactored extends PylosPlayer {
         }
     }
 
-    /* ---------------------------------- zoeken ------------------------------------ */
-
     private int minimax(int depth, PylosGameSimulator sim, PylosBoard board, int alpha, int beta) {
         if (sim.getState() == PylosGameState.COMPLETED) {
             boolean iWon = sim.getColor() != PLAYER_COLOR;
@@ -154,7 +144,7 @@ public class MiniMaxRefactored extends PylosPlayer {
         int hint = -1;
 
         if (ttDepth[slot] >= 0 && ttKey[slot] == key) {
-            hint = ttMove[slot];                            // beste zet uit eerdere zoektocht
+            hint = ttMove[slot]; // beste zet uit eerdere zoektocht
             if (ttDepth[slot] >= depth) {
                 int v = ttValue[slot];
                 switch (ttFlag[slot]) {
@@ -196,7 +186,6 @@ public class MiniMaxRefactored extends PylosPlayer {
             if (beta <= alpha) break;
         }
 
-        // bound bepalen tov het originele zoekvenster (fail-soft)
         byte flag = best <= alphaOrig ? TT_UPPER : (best >= betaOrig ? TT_LOWER : TT_EXACT);
         store(key, depth, best, flag, bestCode);
         return best;
@@ -222,8 +211,6 @@ public class MiniMaxRefactored extends PylosPlayer {
     private int childDepth(Move m, int depth) {
         return m.prevState == PylosGameState.MOVE ? depth - 1 : depth;
     }
-
-    /* ------------------------------ MOVE ORDERING ------------------------------ */
 
     private void orderMoves(List<Move> moves, PylosPlayerColor color, int ttHint) {
         for (Move m : moves) {
@@ -255,7 +242,7 @@ public class MiniMaxRefactored extends PylosPlayer {
         moves.sort((a, b) -> Integer.compare(b.order, a.order));
     }
 
-    // true als een bal van `color` op `loc` een vierkant van 4 eigen ballen vormt
+    // true als een bal van een color op een loc een vierkant van 4 eigen ballen vormt
     private static boolean completesSquare(PylosLocation loc, PylosPlayerColor color) {
         for (PylosSquare sq : loc.getSquares()) {
             if (sq.getInSquare(color) == 3 && sq.getInSquare(color.other()) == 0) {
@@ -264,8 +251,6 @@ public class MiniMaxRefactored extends PylosPlayer {
         }
         return false;
     }
-
-    /* --------------------------------------------------------------------------- */
 
     private List<Move> generateMoves(PylosGameSimulator sim, PylosBoard board) {
         List<Move> moves = new ArrayList<>(64);
